@@ -23,21 +23,46 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
+var bcrypt = require('bcrypt-nodejs');
+
 app.get('/', 
 function(req, res) {
+  if(!req.user){
+  res.redirect('/login');
+  } else {
+
+
   res.render('index');
+  }
 });
+
+app.get('/login', 
+function(req, res){
+  res.render('login');
+});
+
+
 
 app.get('/create', 
 function(req, res) {
+  if(!req.user){
+  res.redirect('/login');  
+  } else{
+
   res.render('index');
+  }
 });
 
 app.get('/links', 
 function(req, res) {
-  Links.reset().fetch().then(function(links) {
+    if(!req.path){
+    res.redirect('/login');
+  }
+    Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
+
+
 });
 
 app.post('/links', 
@@ -52,6 +77,7 @@ function(req, res) {
   new Link({ url: uri }).fetch().then(function(found) {
     if (found) {
       res.send(200, found.attributes);
+      console.log(uri);
     } else {
       util.getUrlTitle(uri, function(err, title) {
         if (err) {
@@ -77,9 +103,47 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+app.post('/signup', function(req, res){
+   var username = req.body.username;
+  var password = req.body.password;
+
+  new User({username: username})
+    .fetch()
+    .then(function(user){
+      if(!user){
+          Users.create({
+            username: username,
+            password: password
+          });
+          res.redirect('/');
+        }
+
+          res.send(user);
+          
+
+    });
+  });
+  //    new User({ username: username })
+  //     .fetch()
+  //     .then(function(user) {
+  //       if (!user) {
+  //         // BASIC VERSION - covered in lecture
+  //         bcrypt.hash(password, null, null, function(err, hash){
+  //           Users.create({
+  //             username: username,
+  //             password: hash
+  //           }).then(function(user) {
+  //               util.createSession(req, res, user);
+  //           });
+  //         });
+     
+  // });
 
 
+app.get('/signup', function(req, res){
+  res.render('signup');
 
+});
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
 // assume the route is a short code and try and handle it here.
